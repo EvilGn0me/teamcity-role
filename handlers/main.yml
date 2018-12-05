@@ -1,0 +1,8 @@
+---
+- name: restart teamcity
+  systemd:
+    name: '{{ item }}'
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+  with_items: '{{ teamcity.services }}'

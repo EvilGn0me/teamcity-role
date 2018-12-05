@@ -1,0 +1,95 @@
+---
+# tasks file for teamcity-role
+- name: create dirs
+  file:
+    path: '{{ item }}'
+    state: directory
+    owner: root
+    group: root
+  with_items:
+    - '{{ teamcity.installdir }}'
+    - '{{ teamcity.tcconfdir }}'
+    - '{{ teamcity.tcconfdir }}/lib/jdbc'
+    - '{{ teamcity.tcconfdir }}/config'
+    - '{{ teamcity.installdir }}/logs'
+    - '{{ teamcity.tcconfdir }}/plugins/slack_notify'
+
+- name: install teamcity
+  unarchive:
+    src: '{{ teamcity.download_url }}'
+    dest: '{{ teamcity.installdir }}'
+    creates: '{{ teamcity.installdir }}/bin/startup.sh'
+    extra_opts: [--strip-components=1]
+    remote_src: yes
+  notify: restart teamcity
+
+- name: install mysql jdbc
+  unarchive:
+    src: '{{ teamcity.mysql_jdbc_url }}'
+    dest: '{{ teamcity.tcconfdir }}/lib/jdbc'
+    extra_opts: [--strip-components=1]
+    remote_src: yes
+  notify: restart teamcity
+
+- name: install slack notify plugin
+  unarchive:
+    src: '{{ teamcity.slack_notify_plugin }}'
+    dest: '{{ teamcity.tcconfdir }}/plugins/slack_notify'
+    remote_src: yes
+  notify: restart teamcity
+
+- name: manage teamcity alternatives
+  alternatives:
+    name: teamcity
+    link: '{{ teamcity.tcroot }}'
+    path: '{{ teamcity.installdir }}'
+  notify: restart teamcity
+
+- name: create teamcity database
+  mysql_db:
+    name: '{{ teamcity_conf.mysql.database }}'
+    state: present
+
+- name: create mysql user
+  mysql_user:
+    name: "{{ teamcity_conf.mysql.user }}"
+    password: '{{ teamcity_conf.mysql.password }}'
+    host: '127.0.0.1'
+    priv: '{{ teamcity_conf.mysql.database }}.*:ALL'
+    state: present
+
+- name: manage teamcity service
+  template:
+    src: templates/teamcity.service
+    dest: /etc/systemd/system/teamcity.service
+    owner: root
+    group: root
+    mode: 0644
+
+- name: manage teamcity nginx conf
+  template:
+    src: templates/teamcity.conf
+    dest: /etc/nginx/conf.d/teamcity.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: manage teamcity server conf
+  template:
+    src: templates/server.xml
+    dest: /opt/teamcity/conf/server.xml
+    owner: root
+    group: root
+    mode: 0644
+
+- name: create certificate
+  shell: bash -lc 'certbot certonly --standalone -n --agree-tos --email devops@faunusaff.com --domains {{ teamcity_conf.server_name }} --pre-hook "systemctl stop nginx" --post-hook "systemctl start nginx"'
+  ignore_errors: yes
+
+- name: ensure services running
+  systemd:
+    name: '{{ item }}'
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  with_items: '{{ teamcity.services }}'

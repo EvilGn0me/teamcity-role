@@ -1,0 +1,10 @@
+---
+# defaults file for teamcity-role
+teamcity_conf:
+  server_name: 'teamcity.faunus.io'
+  ssl: True
+  version: '2017.1.4'
+  mysql:
+    user: 'teamcity'
+    password: 'change_me'
+    database: 'teamcity'

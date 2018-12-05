@@ -1,0 +1,13 @@
+[Unit]
+Description=TeamCity Server
+After=network.target
+
+[Service]
+Type=forking
+Environment=JAVA_HOME=/opt/jdk
+PIDFile={{ teamcity.tcroot }}/logs/teamcity.pid
+ExecStart={{ teamcity.tcroot }}/bin/teamcity-server.sh start
+ExecStop={{ teamcity.tcroot }}/bin/teamcity-server.sh stop
+
+[Install]
+WantedBy=multi-user.target

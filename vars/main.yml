@@ -1,0 +1,11 @@
+---
+# vars file for teamcity-role
+teamcity:
+  tcconfdir: '/root/.BuildServer'
+  mysql_jdbc_url: 'https://cdn.mysql.com/Downloads/Connector-J/mysql-connector-java-8.0.11.tar.gz'
+  slack_notify_plugin: 'https://github.com/PeteGoo/tcSlackBuildNotifier/releases/download/v1.4.6/tcSlackNotificationsPlugin.zip'
+  services:
+    - teamcity
+  tcroot: '/opt/teamcity'
+  installdir: '/usr/share/teamcity-{{ teamcity_conf.version }}'
+  download_url: 'https://download-cf.jetbrains.com/teamcity/TeamCity-{{ teamcity_conf.version }}.tar.gz'
